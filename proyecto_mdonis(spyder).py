@@ -90,20 +90,24 @@ for i in d:
 
 y = train[:,d['SalePrice']].reshape(-1, 1)
 x = train[:,d['OverallQual']].reshape(-1, 1)
+
+#y = np.array(list(range(1,100))).reshape(-1, 1)
+#x = np.array(list(range(1,100))).reshape(-1, 1)
+
 b = np.ones_like(x)
 mat_a = np.hstack([x,b])
 # Inicialización de parámetros
-b1, b0 = 39000, -10000
+b1, b0 = 43656.32107902, -84340.59865125
 # Iteraciones
 epochs = 10000
 imprimir_error_cada = 1
-learn_rate = 0.3
+learn_rate = 0.01
 n = y.shape[0]
 bi = {}
 
-for i in range(1,epochs+1):
+for i in range(epochs):
     # Parámetros iniciales de la iteración i
-    if i == 1:
+    if i == 0:
         vect = np.array([[b1],[b0]])
     else:
         vect = bi[i-1]
@@ -115,7 +119,7 @@ for i in range(1,epochs+1):
     e = (1/(2*n))*((y-y_h)**2).sum()
     
     # Almacenar el error en un vector
-    if i == 1:
+    if i == 0:
         errors = np.array([e])
     else:
         errors = np.append(errors,[e])
@@ -137,10 +141,10 @@ plt.plot(range(1,epochs+1),errors)
 plt.show()
 
 
-
-
-
-
+# scatterplot
+plt.plot(x, y_h)
+plt.scatter(x, y, s = 0.3)
+plt.show()
 
  
 
