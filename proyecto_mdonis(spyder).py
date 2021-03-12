@@ -55,7 +55,7 @@ h = {}
 sns.set_theme();
 
 for i in df.columns:
-    h['{}'.format(i)] = sns.distplot(df['{}'.format(i)])
+    h['{}'.format(i)] = sns.displot(df['{}'.format(i)], kde=True)
     plt.show()
     
 
@@ -92,20 +92,49 @@ y = train[:,d['SalePrice']].reshape(-1, 1)
 x = train[:,d['OverallQual']].reshape(-1, 1)
 b = np.ones_like(x)
 mat_a = np.hstack([x,b])
-b1, b0 = 2, 1
-vect = np.array([[b1],[b0]])
-epochs = 10
+# Inicialización de parámetros
+b1, b0 = 39000, -10000
+# Iteraciones
+epochs = 10000
 imprimir_error_cada = 1
-learning_rate = 3
+learn_rate = 0.3
 n = y.shape[0]
+bi = {}
 
-# iteraciones
-y_h = np.matmul(mat_a, vect)
+for i in range(1,epochs+1):
+    # Parámetros iniciales de la iteración i
+    if i == 1:
+        vect = np.array([[b1],[b0]])
+    else:
+        vect = bi[i-1]
+    
+    # Prediciones
+    y_h = np.matmul(mat_a, vect)
+    
+    # Error
+    e = (1/(2*n))*((y-y_h)**2).sum()
+    
+    # Almacenar el error en un vector
+    if i == 1:
+        errors = np.array([e])
+    else:
+        errors = np.append(errors,[e])
+    
+    # Gradientes
+    mat_b = np.transpose(y_h-y)
+    b_grad = (np.matmul(mat_b,mat_a)/n).reshape(-1,1)
+    
+    # Betas
+    mat1 = np.hstack([vect,b_grad])
+    mat2 = np.array([[1],[-learn_rate]])
+    
+    # Parámetros resultantes de la iteración i
+    bi[i] = np.matmul(mat1,mat2)
 
-e = (1/(2*n))*((y-y_h)**2).sum()
+# Gráfica del error
 
-
-
+plt.plot(range(1,epochs+1),errors)
+plt.show()
 
 
 
