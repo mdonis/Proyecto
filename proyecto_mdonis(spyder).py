@@ -11,144 +11,131 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-os.chdir('C:/Users/mdonis/Documents/Maestría Data Science/Ciencia de Datos en Python/Proyecto')
-
-# Descarga
-ds = np.load('proyecto_training_data.npy')
-
-# Mismos sets de datos convertidos en dataframes
-varss = ['SalePrice','OverallQual','1stFlrSF','TotRmsAbvGrd','YearBuilt','LotFrontage']
-df = pd.DataFrame(ds, columns = varss)
-
-# Relación columnas ds-df
-d = {'SalePrice':0,'OverallQual':1,'1stFlrSF':2,'TotRmsAbvGrd':3,'YearBuilt':4,'LotFrontage':5}
-
-#%% 2. Random-Slicing:
-# Random
-np.random.shuffle(ds)
-
-# Slicing 80%-20%
-s = int(ds.shape[0]*0.8)
-
-train = ds[0:s,:]
-test = ds[s:,:]
-
-# Análogos en dfs
-train_df = pd.DataFrame(train, columns = varss)
-test_df = pd.DataFrame(test, columns = varss)
-
-#%% 3. Análisis Exploratorio:
-# Análisis exploratorio pandas
-med = df.median(axis = 0)
-maxx = df.max(axis = 0)
-minn = df.min(axis = 0)
-rang = maxx - minn
-std = df.std(axis = 0)
+#os.chdir('C:/Users/mdonis/Documents/Maestría Data Science/Ciencia de Datos en Python/Proyecto')
+os.chdir('C:/Users/m_don/Documents/DataScience/Ciencia de Datos en Python/Proyecto')
 
 
-# Resultado análisis exploratorio
-exp_analysis = pd.concat([med,maxx,minn,rang,std], keys = ['median','max','min','range','std'], axis = 1)
-print(exp_analysis)
-
-#%% 4. histogramas
-h = {}
-sns.set_theme();
-
-for i in df.columns:
-    h['{}'.format(i)] = sns.displot(df['{}'.format(i)], kde=True)
-    plt.show()
+class regression():
+    varss = ['SalePrice','OverallQual','1stFlrSF','TotRmsAbvGrd','YearBuilt','LotFrontage']
+    d = {'SalePrice':0,'OverallQual':1,'1stFlrSF':2,'TotRmsAbvGrd':3,'YearBuilt':4,'LotFrontage':5}
+    predictable = d['SalePrice']
+    r = {}
     
-
-#%% 5. Para cada variable independiente x:
-    
-# Correlación vectorizada
-r = {}
-p = {}
-for i in d:
-    if np.isnan(train[:,d[i]].sum()) == False:
-        y = train[:,0]
-        x = train[:,d[i]]
-        n = y.shape[0]
-    else:
-        train_nonna = train[~np.isnan(train).any(axis=1)]
-        y = train_nonna[:,0]
-        x = train_nonna[:,d[i]]
-        n = y.shape[0]
+    def __init__(self, npy_filename):
+        self.npy = np.load('{}.npy'.format(npy_filename))
+        np.random.shuffle(self.npy)
+        s = int(self.npy.shape[0]*0.8)
+        self.train = self.npy[0:s,:]
+        self.test = self.npy[s:,:]
         
-    r['{}'.format(i)] = (n*(x*y).sum() - x.sum()*y.sum()) / ((n*(x**2).sum() - x.sum()**2)*(n*(y**2).sum() - y.sum()**2))**(1/2)
+        self.df = pd.DataFrame(self.npy, columns = self.varss)
+        self.train_df = pd.DataFrame(self.train, columns = self.varss)
+        self.test_df = pd.DataFrame(self.test, columns = self.varss)
     
-    # scatterplot
-    p['{}'.format(i)] = plt.scatter(x, y, s = 0.3)
-    plt.title('{} r = {}'.format(varss[d[i]],r[i]))
-    plt.xlabel(varss[d[i]])
-    plt.ylabel(varss[0])
-    plt.show()
+    def exp_analysis(self):
+        med = self.df.median(axis = 0)
+        maxx = self.df.max(axis = 0)
+        minn = self.df.min(axis = 0)
+        rang = maxx - minn
+        std = self.df.std(axis = 0)
+        result = pd.concat([med,maxx,minn,rang,std], keys = ['median','max','min','range','std'], axis = 1)
+        return result
     
-
-#%% 6 y 7. Función de entrenamiento para el modelo de regresión lineal
-
-
-y = train[:,d['SalePrice']].reshape(-1, 1)
-x = train[:,d['OverallQual']].reshape(-1, 1)
-
-#y = np.array(list(range(1,100))).reshape(-1, 1)
-#x = np.array(list(range(1,100))).reshape(-1, 1)
-
-b = np.ones_like(x)
-mat_a = np.hstack([x,b])
-# Inicialización de parámetros
-b1, b0 = 43656.32107902, -84340.59865125
-# Iteraciones
-epochs = 10000
-imprimir_error_cada = 1
-learn_rate = 0.01
-n = y.shape[0]
-bi = {}
-
-for i in range(epochs):
-    # Parámetros iniciales de la iteración i
-    if i == 0:
-        vect = np.array([[b1],[b0]])
-    else:
-        vect = bi[i-1]
+    def hist(self):
+        for i in self.df.columns:
+            sns.displot(self.df['{}'.format(i)], kde=True)
+            plt.show()
     
-    # Prediciones
-    y_h = np.matmul(mat_a, vect)
-    
-    # Error
-    e = (1/(2*n))*((y-y_h)**2).sum()
-    
-    # Almacenar el error en un vector
-    if i == 0:
-        errors = np.array([e])
-    else:
-        errors = np.append(errors,[e])
-    
-    # Gradientes
-    mat_b = np.transpose(y_h-y)
-    b_grad = (np.matmul(mat_b,mat_a)/n).reshape(-1,1)
-    
-    # Betas
-    mat1 = np.hstack([vect,b_grad])
-    mat2 = np.array([[1],[-learn_rate]])
-    
-    # Parámetros resultantes de la iteración i
-    bi[i] = np.matmul(mat1,mat2)
+    def vars_select(self):
+        for i in self.d:
+            if np.isnan(self.train[:,self.d[i]].sum()) == False:
+                y = self.train[:,self.predictable]
+                x = self.train[:,self.d[i]]
+                n = y.shape[0]
+            else:
+                train_nonna = self.train[~np.isnan(self.train).any(axis=1)]
+                y = train_nonna[:,self.predictable]
+                x = train_nonna[:,self.d[i]]
+                n = y.shape[0]
+                
+            self.r['{}'.format(i)] = (n*(x*y).sum() - x.sum()*y.sum()) / ((n*(x**2).sum() - x.sum()**2)*(n*(y**2).sum() - y.sum()**2))**(1/2)
+            
+            # scatterplot
+            plt.scatter(x, y, s = 0.3)
+            plt.title('{} Where r = {}'.format(self.varss[self.d[i]],self.r[i]))
+            plt.xlabel(self.varss[self.d[i]])
+            plt.ylabel(self.varss[self.predictable])
+            plt.show()
+        return self.r
+        
+    @classmethod
+    def change_var_to_predict(cls, var):
+        regression.predictable = regression.d[var]
+        
+    def train_model(self,x_name,epochs,error_freq,learn_rate):
+        self.y = self.train[:,self.predictable].reshape(-1, 1)
+        self.x = self.train[:,self.d[x_name]].reshape(-1, 1)
+        b = np.ones_like(self.x)
+        self.mat_a = np.hstack([self.x,b])
+        b1, b0 = 1, 1
+        self.epochs = epochs
+        self.error_freq = error_freq
+        self.learn_rate = learn_rate
+        n = self.y.shape[0]
+        self.bi = {}
+        err = list(range(0,self.epochs+1,self.error_freq))
+        
+        for i in range(self.epochs):
+            if i == 0:
+                vect = np.array([[b1],[b0]])
+            else:
+                vect = self.bi[i-1]
+            y_h = np.matmul(self.mat_a, vect)
+            e = (1/(2*n))*((self.y-y_h)**2).sum()
+            if i in err:
+                if i == 0:
+                    self.errors = np.array([e])
+                else:
+                    self.errors = np.append(self.errors,[e])
+            mat_b = np.transpose(y_h-self.y)
+            b_grad = (np.matmul(mat_b,self.mat_a)/n).reshape(-1,1)
+            mat1 = np.hstack([vect,b_grad])
+            mat2 = np.array([[1],[-self.learn_rate]])
+            self.bi[i] = np.matmul(mat1,mat2)
+        plt.plot(range(1,self.epochs+1,self.error_freq),self.errors)
+        plt.show()
+        # scatterplot
+        plt.plot(self.x, y_h)
+        plt.scatter(self.x, self.y, s = 0.3)
+        plt.show()
+        return str('Betas: '), self.bi, str('Errores: '), self.errors
 
-# Gráfica del error
 
-plt.plot(range(1,epochs+1),errors)
-plt.show()
+    def model_evol(self,n):
+        self.n = n
+        models = list(range(0,self.epochs,self.n))
+        for i in models:
+            if i == self.n*(self.epochs/self.n-1):
+                plt.plot(self.x,np.matmul(self.mat_a, self.bi[i]), color='r')
+            else:
+                plt.plot(self.x,np.matmul(self.mat_a, self.bi[i]), alpha=0.3)
+        plt.scatter(self.x, self.y, s = 0.3)
+        
+
+obj = regression('proyecto_training_data')
+
+obj.exp_analysis()
+obj.hist()
+obj.vars_select()
+
+obj.train_model('OverallQual', 20, 1, 0.01)
+obj.model_evol(1)
 
 
-# scatterplot
-plt.plot(x, y_h)
-plt.scatter(x, y, s = 0.3)
-plt.show()
-
- 
 
 
+regression.predictable
+regression.change_var_to_predict('SalePrice')
 
 
 
